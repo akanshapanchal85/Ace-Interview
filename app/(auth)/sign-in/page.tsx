@@ -1,9 +1,10 @@
 import React from 'react';
+import AuthForm from '@/components/AuthForm';
 
 const SignInPage = () => {
   return (
     <div>
-      <h1>SignInPage</h1>
+      <AuthForm type="sign-in"/>
     </div>
   );
 };
