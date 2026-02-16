@@ -5,6 +5,8 @@ import Link from "next/link";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
@@ -20,6 +22,7 @@ const authFormSchema = (type: FormType) =>
   });
 
 const AuthForm = ({ type }: { type: FormType }) => {
+    const router = useRouter();
   const formSchema = authFormSchema(type);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -31,9 +34,21 @@ const AuthForm = ({ type }: { type: FormType }) => {
     },
   });
 
-  const onSubmit = async (data: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     // UI only for now.
-    console.log({ type, ...data });
+    try{
+        console.log(values);
+        if(type === "sign-up"){
+            toast.success("Account created successfully");
+            router.push("/sign-in");
+        }else{
+            toast.success("Signed in successfully");
+            router.push("/");
+        }
+    }catch(error){
+        console.log(error);
+        toast.error(`Failed to submit form : ${error}`);
+    }
   };
 
   const isSignIn = type === "sign-in";
