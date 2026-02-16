@@ -1,143 +1,100 @@
-"use client"
+"use client";
 
-import { zodResolver } from "@hookform/resolvers/zod"
-import { Controller, useForm } from "react-hook-form"
-import * as z from "zod"
+import Image from "next/image";
+import Link from "next/link";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupText,
-  InputGroupTextarea,
-} from "@/components/ui/input-group"
+import { Form } from "@/components/ui/form";
+import { Button } from "@/components/ui/button";
+import FormField from "@/components/FormField";
 
-const formSchema = z.object({
-  title: z
-    .string()
-    .min(5, "Bug title must be at least 5 characters.")
-    .max(32, "Bug title must be at most 32 characters."),
-  description: z
-    .string()
-    .min(20, "Description must be at least 20 characters.")
-    .max(100, "Description must be at most 100 characters."),
-})
+type FormType = "sign-in" | "sign-up";
 
-type AuthFormProps = {
-  type: "sign-in" | "sign-up"
-}
+const authFormSchema = (type: FormType) =>
+  z.object({
+    name: type === "sign-up" ? z.string().min(3, "Name is required.") : z.string().optional(),
+    email: z.string().email("Please enter a valid email."),
+    password: z.string().min(3, "Password must be at least 3 characters."),
+  });
 
-const AuthForm = ({ type }: AuthFormProps) => {
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-          title: "",
-          description: "",
-        },
-      })
-     
-      function onSubmit(data: z.infer<typeof formSchema>) {
-        // Do something with the form values.
-        console.log(data)
-      }
+const AuthForm = ({ type }: { type: FormType }) => {
+  const formSchema = authFormSchema(type);
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+    },
+  });
+
+  const onSubmit = async (data: z.infer<typeof formSchema>) => {
+    // UI only for now.
+    console.log({ type, ...data });
+  };
+
+  const isSignIn = type === "sign-in";
+
   return (
-    <div>
-      <Card className="w-full sm:max-w-md">
-      <CardHeader>
-        <CardTitle>{type === "sign-in" ? "Sign in" : "Sign up"}</CardTitle>
-        <CardDescription>
-          {type === "sign-in"
-            ? "Welcome back. Please sign in to continue."
-            : "Create your account to get started."}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form id="form-rhf-demo" onSubmit={form.handleSubmit(onSubmit)}>
-          <FieldGroup>
-            <Controller
-              name="title"
+    <div className="card-border lg:min-w-[566px]">
+      <div className="flex flex-col gap-6 card py-14 px-10">
+        <div className="flex flex-row gap-2 justify-center items-center">
+          <Image src="/logo.svg" alt="logo" height={32} width={38} />
+          <h2 className="text-primary-100 font-semibold">Ace Interview</h2>
+        </div>
+
+        <h3 className="text-center">Practice job interviews with AI</h3>
+
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="w-full space-y-6 mt-4 form"
+          >
+            {!isSignIn && (
+              <FormField
+                control={form.control}
+                name="name"
+                label="Name"
+                placeholder="Your name"
+                type="text"
+              />
+            )}
+
+            <FormField
               control={form.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="form-rhf-demo-title">
-                    Bug Title
-                  </FieldLabel>
-                  <Input
-                    {...field}
-                    id="form-rhf-demo-title"
-                    aria-invalid={fieldState.invalid}
-                    placeholder="Login button not working on mobile"
-                    autoComplete="off"
-                  />
-                  {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error]} />
-                  )}
-                </Field>
-              )}
+              name="email"
+              label="Email"
+              placeholder="Your email address"
+              type="email"
             />
-            <Controller
-              name="description"
+
+            <FormField
               control={form.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="form-rhf-demo-description">
-                    Description
-                  </FieldLabel>
-                  <InputGroup>
-                    <InputGroupTextarea
-                      {...field}
-                      id="form-rhf-demo-description"
-                      placeholder="I'm having an issue with the login button on mobile."
-                      rows={6}
-                      className="min-h-24 resize-none"
-                      aria-invalid={fieldState.invalid}
-                    />
-                    <InputGroupAddon align="block-end">
-                      <InputGroupText className="tabular-nums">
-                        {field.value.length}/100 characters
-                      </InputGroupText>
-                    </InputGroupAddon>
-                  </InputGroup>
-                  <FieldDescription>
-                    Include steps to reproduce, expected behavior, and what
-                    actually happened.
-                  </FieldDescription>
-                  {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error]} />
-                  )}
-                </Field>
-              )}
+              name="password"
+              label="Password"
+              placeholder="Enter your password"
+              type="password"
             />
-          </FieldGroup>
-        </form>
-      </CardContent>
-      <CardFooter>
-        <Field orientation="horizontal">
-          <Button type="button" variant="outline" onClick={() => form.reset()}>
-            Reset
-          </Button>
-          <Button type="submit" form="form-rhf-demo">
-            Submit
-          </Button>
-        </Field>
-      </CardFooter>
-    </Card>
+
+            <Button className="btn" type="submit">
+              {isSignIn ? "Sign In" : "Create an Account"}
+            </Button>
+          </form>
+        </Form>
+
+        <p className="text-center text-light-100">
+          {isSignIn ? "No account yet?" : "Have an account already?"}
+          <Link
+            href={isSignIn ? "/sign-up" : "/sign-in"}
+            className="font-bold text-primary-200 ml-1"
+          >
+            {isSignIn ? "Sign Up" : "Sign In"}
+          </Link>
+        </p>
+      </div>
     </div>
   );
 };
