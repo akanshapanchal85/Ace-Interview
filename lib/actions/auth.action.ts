@@ -64,13 +64,9 @@ export async function signUp(params : signUpParams){
 export async function signIn(params : signInParams){
     const {email, idToken} = params;
     try{
-        const userRecord = await auth.getUserByEmail(email);
-        if(userRecord){
-            return {
-                success : false,
-                error : "User not found, create an account first"
-            }
-        }
+        // `getUserByEmail` returns a user if it exists; otherwise it throws.
+        await auth.getUserByEmail(email);
+
         await setSessionCookie(idToken);
         return {
             success : true,
@@ -86,19 +82,55 @@ export async function signIn(params : signInParams){
 }
 
 export async function setSessionCookie(idToken : string){
+    const cookieStore = await cookies();
+    const sessionCookie = await auth.createSessionCookie(idToken, {
+        expiresIn : oneWeekInSeconds
+    });
+    cookieStore.set('session', sessionCookie, {
+        httpOnly : true,
+        secure : process.env.NODE_ENV === 'production',
+        maxAge : oneWeekInSeconds,
+        sameSite : 'lax',
+        path : '/',
+    });
+}
+
+export type CurrentUser = {
+    id: string;
+    name?: string;
+    email?: string;
+    createdAt?: unknown;
+};
+
+export async function getCurrentUser() : Promise<CurrentUser | null>{
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('session')?.value;
+    if(!sessionCookie){
+        return null;
+    }
     try{
-        const cookieStore = await cookies();
-        const sessionCookie = await auth.createSessionCookie(idToken, {
-            expiresIn : oneWeekInSeconds // 5 days
-        });
-        cookieStore.set('session', sessionCookie, {
-            httpOnly : true,
-            secure : process.env.NODE_ENV === 'production',
-            maxAge : oneWeekInSeconds,
-            sameSite : 'lax',
-            path : '/',
-        });
+        const decodedClaims = await auth.verifySessionCookie(sessionCookie);
+        const userRecord = await db.collection('users').doc(decodedClaims.uid).get();
+        if(!userRecord.exists){
+            return null;
+        }
+        const data = userRecord.data();
+
+        // Return only non-sensitive user profile fields.
+        return {
+            id: userRecord.id,
+            name: typeof data?.name === 'string' ? data.name : undefined,
+            email: typeof data?.email === 'string' ? data.email : undefined,
+            createdAt: data?.createdAt,
+        };
     }catch(error){
         console.log(error);
+        return null;
     }
+}
+
+export async function isAuthenticated(){
+    const user = await getCurrentUser();
+
+    return !!user;
 }

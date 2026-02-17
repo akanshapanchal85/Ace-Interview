@@ -69,9 +69,14 @@ const AuthForm = ({ type }: { type: FormType }) => {
                 toast.error("Failed to get ID token.");
                 return;
             }
-            await signIn({email, idToken});
+            const result = await signIn({email, idToken});
+            if(!result?.success){
+              toast.error(result?.error ?? "Failed to log in.");
+              return;
+            }
             toast.success("Signed in successfully");
             router.push("/");
+            router.refresh();
         }
     }catch(error){
         console.log(error);
