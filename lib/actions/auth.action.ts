@@ -124,6 +124,15 @@ export async function getCurrentUser() : Promise<CurrentUser | null>{
             createdAt: data?.createdAt,
         };
     }catch(error){
+        // Treat expected auth cookie failures as "not authenticated".
+        // This avoids log spam when a stale cookie is present.
+        if (
+            hasErrorCode(error) &&
+            (error.code === 'auth/session-cookie-expired' ||
+                error.code === 'auth/invalid-session-cookie')
+        ) {
+            return null;
+        }
         console.log(error);
         return null;
     }
