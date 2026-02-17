@@ -11,6 +11,10 @@ import { useRouter } from "next/navigation";
 import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import FormField from "@/components/FormField";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/firebase/client";
+import { signIn, signUp } from "@/lib/actions/auth.action";
+
 
 type FormType = "sign-in" | "sign-up";
 
@@ -39,9 +43,33 @@ const AuthForm = ({ type }: { type: FormType }) => {
     try{
         console.log(values);
         if(type === "sign-up"){
+            const {name, email, password} = values;
+            if(!name){
+              toast.error("Name is required.");
+              return;
+            }
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const result = await signUp({
+                uid : userCredential.user.uid,
+                name,
+                email,
+                password
+            });
+            if(!result?.success){
+                toast.error(result.error ?? "Failed to sign up.");
+                return;
+            }
             toast.success("Account created successfully");
             router.push("/sign-in");
         }else{
+            const {email, password} = values;
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const idToken = await userCredential.user.getIdToken();
+            if(!idToken){
+                toast.error("Failed to get ID token.");
+                return;
+            }
+            await signIn({email, idToken});
             toast.success("Signed in successfully");
             router.push("/");
         }
